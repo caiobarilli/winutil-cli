@@ -605,6 +605,9 @@ function Invoke-ActionExporter {
         if (Test-Path $exePath) {
             Write-Status INFO "windows_exporter ja instalado em: $exePath"
             Start-ExporterProcess
+            Register-ExporterTask
+            Show-ExporterMetrics
+            Set-ExporterFirewall
             return
         }
 
