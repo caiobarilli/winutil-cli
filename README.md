@@ -57,6 +57,7 @@ winutil-cli
 .\winutil-cli.ps1 -Action dns -Provider cloudflare
 .\winutil-cli.ps1 -Action dns -Provider google
 .\winutil-cli.ps1 -Action dns -Provider quad9
+.\winutil-cli.ps1 -Action dns -Provider custom -PrimaryDNS 192.168.15.173 -SecondaryDNS 9.9.9.9
 .\winutil-cli.ps1 -Action performance
 .\winutil-cli.ps1 -Action install -Apps "Git.Git,Microsoft.VSCode"
 .\winutil-cli.ps1 -Action memory
@@ -82,16 +83,31 @@ Import-Module Pester -MinimumVersion 5.0 -Force
 Invoke-Pester .\pester\configs.Tests.ps1
 ```
 
+## Status das ações
+
+| Ação | Status | Observação |
+|------|--------|------------|
+| audit | ✅ | 8 blocos de log gerados |
+| tweaks standard | ✅ | 14 tweaks aplicados |
+| tweaks advanced | ✅ | 18 tweaks aplicados |
+| dns cloudflare | ✅ | Aplicado nos adaptadores ativos |
+| dns custom | ✅ | Suporte a DNS local (ex: AdGuard Home) |
+| memory | ✅ | Download automático + limpeza |
+| performance | ⚠️ | Ativa mas GUID hardcoded não bate em todos os sistemas |
+| debloat | ⏭️ | Lista de APPX ainda vazia |
+| install | ⏭️ | Não testado |
+
 ## Roadmap
 
 - [x] Entry point `winutil-cli.ps1` com menu CLI
 - [x] Audit logs em `C:\log\DD.MM.AAAA\`
-- [x] DNS via parâmetro
-- [x] Ultimate Performance via `powercfg`
-- [x] Limpeza de RAM via WinMemoryCleaner
+- [x] DNS via parâmetro com suporte a provider custom
+- [x] Limpeza de RAM via WinMemoryCleaner com download automático
+- [x] Tweaks Standard e Advanced testados
+- [ ] Fix do Performance — detectar GUID dinamicamente via `powercfg /list`
 - [ ] Lista de APPX para debloat
 - [ ] Testes Pester para o entry point
-- [ ] Suporte a `-Action tweaks` sem dependência de GUI
+- [ ] Testar `-Action install`
 
 ## Créditos
 
