@@ -1,28 +1,39 @@
-# winutil-cli
+> Fork do [WinUtil (Chris Titus Tech)](https://github.com/ChrisTitusTech/winutil) sem interface gráfica — PowerShell puro, local ou via SSH.
 
-Fork do [WinUtil (Chris Titus Tech)](https://github.com/ChrisTitusTech/winutil) focado em uso via linha de comando — sem interface gráfica, sem dependências de WPF ou Electron. Tudo roda via PowerShell, local ou remotamente via SSH.
+```
+  ██╗    ██╗██╗███╗   ██╗██╗   ██╗████████╗██╗██╗         ██████╗██╗     ██╗
+  ██║    ██║██║████╗  ██║██║   ██║╚══██╔══╝██║██║        ██╔════╝██║     ██║
+  ██║ █╗ ██║██║██╔██╗ ██║██║   ██║   ██║   ██║██║        ██║     ██║     ██║
+  ██║███╗██║██║██║╚██╗██║██║   ██║   ██║   ██║██║        ██║     ██║     ██║
+  ╚███╔███╔╝██║██║ ╚████║╚██████╔╝   ██║   ██║███████╗   ╚██████╗███████╗██║
+   ╚══╝╚══╝ ╚═╝╚═╝  ╚═══╝ ╚═════╝    ╚═╝   ╚═╝╚══════╝    ╚═════╝╚══════╝╚═╝
+```
 
-## O que foi removido
+---
+
+## 🗑️ O que foi removido
 
 - Interface gráfica WPF inteira (`xaml/`, funções `WPF*`)
 - Scripts de compilação e assinatura da GUI
 - Temas, navegação de apps e outros configs exclusivos da interface
 - Funções dependentes de `$sync` WPF
 
-## O que foi mantido
+## 📦 O que foi mantido
 
 - `config/` — JSONs de tweaks, apps, DNS, features e presets
 - `functions/private/` — tweaks, instalação, serviços, registro e rede
 - `functions/public/` — RemoveEdge
 - `pester/configs.Tests.ps1` — testes de validação dos JSONs
 
-## O que foi adicionado
+## ⚡ O que foi adicionado
 
 - `winutil-cli.ps1` — entry point com menu interativo e suporte a parâmetros CLI
-- `audit/audit.ps1` — auditoria completa do sistema em 8 blocos, salva logs em `C:\log\DD.MM.AAAA\`
+- `audit/audit.ps1` — auditoria completa do sistema em 8 blocos
 - `tools/WinMemoryCleaner.exe` — baixado automaticamente na primeira execução
 
-## Uso
+---
+
+## 🚀 Uso
 
 > Requer PowerShell como Administrador.
 
@@ -57,43 +68,90 @@ winutil-cli
 .\winutil-cli.ps1 -Action dns -Provider cloudflare
 .\winutil-cli.ps1 -Action dns -Provider google
 .\winutil-cli.ps1 -Action dns -Provider quad9
+.\winutil-cli.ps1 -Action dns -Provider custom -PrimaryDNS 192.168.15.173 -SecondaryDNS 9.9.9.9
 .\winutil-cli.ps1 -Action performance
 .\winutil-cli.ps1 -Action install -Apps "Git.Git,Microsoft.VSCode"
 .\winutil-cli.ps1 -Action memory
 ```
 
-## Audit
+---
+
+## 🔍 Audit
 
 Gera os seguintes arquivos em `C:\log\DD.MM.AAAA\`:
 
-- `01-sistema.txt` — hostname, uptime, versão do Windows
-- `02-hardware.txt` — CPU, GPU, RAM, discos
-- `03-processos.txt` — top 30 processos por consumo de RAM
-- `04-servicos.txt` — serviços rodando
-- `05-startup.txt` — programas na inicialização
-- `06-rede.txt` — conexões ativas e portas abertas
-- `07-tarefas.txt` — tarefas agendadas ativas
-- `08-hyperv.txt` — estado das VMs Hyper-V
+| Arquivo | Conteúdo |
+|---------|----------|
+| `01-sistema.txt` | hostname, uptime, versão do Windows |
+| `02-hardware.txt` | CPU, GPU, RAM, discos |
+| `03-processos.txt` | top 30 processos por RAM |
+| `04-servicos.txt` | serviços rodando |
+| `05-startup.txt` | programas na inicialização |
+| `06-rede.txt` | conexões ativas e portas abertas |
+| `07-tarefas.txt` | tarefas agendadas ativas |
+| `08-hyperv.txt` | estado das VMs Hyper-V |
 
-## Testes
+### Lendo os logs via terminal
+
+```powershell
+# Listar sessões de log
+ls C:\log\
+
+# Ler um bloco específico
+cat C:\log\01.06.2026\01-sistema.txt
+
+# Ver todos os blocos de uma sessão
+Get-ChildItem C:\log\01.06.2026\ | ForEach-Object { Write-Host "=== $($_.Name) ===" -ForegroundColor Cyan; Get-Content $_.FullName; Write-Host }
+
+# Buscar por processo específico nos logs
+Select-String -Path C:\log\01.06.2026\03-processos.txt -Pattern "docker"
+
+# Ver conexões externas
+cat C:\log\01.06.2026\06-rede.txt
+```
+
+---
+
+## 🧪 Testes
 
 ```powershell
 Import-Module Pester -MinimumVersion 5.0 -Force
 Invoke-Pester .\pester\configs.Tests.ps1
 ```
 
-## Roadmap
+---
+
+## 📊 Status das ações
+
+| Ação | Status | Observação |
+|------|--------|------------|
+| audit | ✅ | 8 blocos de log gerados |
+| tweaks standard | ✅ | 14 tweaks aplicados |
+| tweaks advanced | ✅ | 18 tweaks aplicados |
+| dns cloudflare | ✅ | Aplicado nos adaptadores ativos |
+| dns custom | ✅ | Suporte a DNS local (ex: AdGuard Home) |
+| memory | ✅ | Download automático + limpeza |
+| performance | ⚠️ | Fix pendente — GUID dinâmico via `powercfg /list` |
+| debloat | ⏭️ | Lista de APPX ainda vazia |
+| install | ⏭️ | Não testado |
+
+---
+
+## 🗺️ Roadmap
 
 - [x] Entry point `winutil-cli.ps1` com menu CLI
 - [x] Audit logs em `C:\log\DD.MM.AAAA\`
-- [x] DNS via parâmetro
-- [x] Ultimate Performance via `powercfg`
-- [x] Limpeza de RAM via WinMemoryCleaner
+- [x] DNS via parâmetro com suporte a provider custom
+- [x] Limpeza de RAM via WinMemoryCleaner com download automático
+- [x] Tweaks Standard e Advanced testados
+- [ ] Fix do Performance — detectar GUID dinamicamente via `powercfg /list`
 - [ ] Lista de APPX para debloat
 - [ ] Testes Pester para o entry point
-- [ ] Suporte a `-Action tweaks` sem dependência de GUI
+- [ ] Testar `-Action install`
 
-## Créditos
+---
+
+## 🙏 Créditos
 
 - [ChrisTitusTech/winutil](https://github.com/ChrisTitusTech/winutil) — projeto base
 - [IgorMundstein/WinMemoryCleaner](https://github.com/IgorMundstein/WinMemoryCleaner) — limpeza de RAM
