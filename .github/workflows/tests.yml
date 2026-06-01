@@ -1,0 +1,60 @@
+name: Pester Tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  configs-tests:
+    name: Config JSON Tests
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Pester 5.7+
+        shell: pwsh
+        run: |
+          Install-Module -Name Pester -MinimumVersion 5.7.0 -Force -SkipPublisherCheck -Scope CurrentUser
+
+      - name: Run configs.Tests.ps1
+        shell: pwsh
+        run: |
+          Import-Module Pester -MinimumVersion 5.7.0 -Force
+          $result = Invoke-Pester .\pester\configs.Tests.ps1 -PassThru -CI
+          if ($result.FailedCount -gt 0) {
+            Write-Error "$($result.FailedCount) test(s) failed."
+            exit 1
+          }
+
+  syntax-check:
+    name: PowerShell Syntax Check
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check syntax of all .ps1 files
+        shell: pwsh
+        run: |
+          $failed = @()
+          Get-ChildItem -Path . -Filter *.ps1 -Recurse | ForEach-Object {
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              $_.FullName, [ref]$null, [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              Write-Warning "Syntax errors in: $($_.FullName)"
+              $errors | ForEach-Object { Write-Warning "  $_" }
+              $failed += $_.FullName
+            }
+          }
+          if ($failed.Count -gt 0) {
+            Write-Error "$($failed.Count) file(s) with syntax errors: $($failed -join ', ')"
+            exit 1
+          }
+          Write-Host "All .ps1 files passed syntax check." -ForegroundColor Green
