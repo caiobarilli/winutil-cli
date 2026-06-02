@@ -1,5 +1,5 @@
-# audit.ps1 - Auditoria do Desktop Windows
-# Salvar em C:\audit.ps1 e executar como Administrador
+# audit.ps1 - Windows Desktop Audit
+# Save to C:\audit.ps1 and run as Administrator
 
 $date = Get-Date -Format "dd.MM.yyyy"
 $time = Get-Date -Format "HH:mm:ss"
@@ -7,7 +7,7 @@ $logDir = "C:\log\$date"
 
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
-# Encoding UTF-8 sem BOM (compativel com PS 5.1 e 7+)
+# UTF-8 encoding without BOM (compatible with PS 5.1 and 7+)
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 function Write-Block {
@@ -15,7 +15,7 @@ function Write-Block {
     $header = @"
 ================================================================================
 $title
-Gerado em: $date $time
+Generated: $date $time
 ================================================================================
 
 "@
@@ -24,40 +24,40 @@ Gerado em: $date $time
 }
 
 # ============================================================
-# CHECAGEM DE PRIVILEGIOS
+# PRIVILEGE CHECK
 # ============================================================
 $isAdmin = ([Security.Principal.WindowsPrincipal] `
     [Security.Principal.WindowsIdentity]::GetCurrent()
 ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 if (-not $isAdmin) {
-    Write-Host "[ AVISO ] Sem privilegios de Administrador." -ForegroundColor Yellow
-    Write-Host "          Blocos de rede e tarefas podem vir incompletos." -ForegroundColor Yellow
+    Write-Host "[ AVISO ] No Administrator privileges." -ForegroundColor Yellow
+    Write-Host "          Network and task blocks may be incomplete." -ForegroundColor Yellow
     Write-Host ""
 }
 
 # ============================================================
-# BLOCO 01 - SISTEMA
+# BLOCK 01 - SYSTEM
 # ============================================================
 $os       = Get-CimInstance Win32_OperatingSystem
 $cs       = Get-CimInstance Win32_ComputerSystem
 $uptime   = (Get-Date) - $os.LastBootUpTime
 $content  = @"
 Hostname        : $($cs.Name)
-Dominio         : $($cs.Domain)
-Usuario         : $($env:USERNAME)
-Sistema         : $($os.Caption)
-Versao          : $($os.Version)
+Domain          : $($cs.Domain)
+User            : $($env:USERNAME)
+OS              : $($os.Caption)
+Version         : $($os.Version)
 Build           : $($os.BuildNumber)
-Arquitetura     : $($os.OSArchitecture)
+Architecture    : $($os.OSArchitecture)
 Uptime          : $([math]::Floor($uptime.TotalHours))h $($uptime.Minutes)m $($uptime.Seconds)s
-Ultimo Boot     : $($os.LastBootUpTime)
-Fuso Horario    : $((Get-TimeZone).DisplayName)
+Last Boot       : $($os.LastBootUpTime)
+Time Zone       : $((Get-TimeZone).DisplayName)
 "@
-Write-Block "01-sistema.txt" "BLOCO 01 - SISTEMA" $content
+Write-Block "01-sistema.txt" "BLOCK 01 - SYSTEM" $content
 
 # ============================================================
-# BLOCO 02 - HARDWARE
+# BLOCK 02 - HARDWARE
 # ============================================================
 $cpu     = Get-CimInstance Win32_Processor | Select-Object -First 1
 $ram     = Get-CimInstance Win32_OperatingSystem
@@ -66,8 +66,8 @@ $ramFree  = [math]::Round($ram.FreePhysicalMemory / 1MB, 2)
 $ramUsed  = [math]::Round($ramTotal - $ramFree, 2)
 $gpu      = Get-CimInstance Win32_VideoController | Select-Object -First 1
 
-# VRAM via registro (AdapterRAM satura em ~4GB por ser uint32)
-$vramGB = "N/D"
+# VRAM via registry (AdapterRAM saturates at ~4GB as uint32)
+$vramGB = "N/A"
 try {
     $videoKey = Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" -ErrorAction Stop |
         Where-Object { $_.PSChildName -match '^\d{4}$' } |
@@ -83,32 +83,32 @@ $discos = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Used -ne $null 
     $total = [math]::Round(($_.Used + $_.Free) / 1GB, 1)
     $used  = [math]::Round($_.Used / 1GB, 1)
     $free  = [math]::Round($_.Free / 1GB, 1)
-    "  $($_.Name):\ | Total: ${total}GB | Usado: ${used}GB | Livre: ${free}GB"
+    "  $($_.Name):\ | Total: ${total}GB | Used: ${used}GB | Free: ${free}GB"
 }
 
 $content = @"
 CPU
-  Nome        : $($cpu.Name)
-  Nucleos     : $($cpu.NumberOfCores)
+  Name        : $($cpu.Name)
+  Cores       : $($cpu.NumberOfCores)
   Threads     : $($cpu.NumberOfLogicalProcessors)
   Clock Max   : $($cpu.MaxClockSpeed) MHz
 
 GPU
-  Nome        : $($gpu.Name)
+  Name        : $($gpu.Name)
   VRAM        : $vramGB
 
 RAM
   Total       : ${ramTotal} GB
-  Usada       : ${ramUsed} GB
-  Livre       : ${ramFree} GB
+  Used        : ${ramUsed} GB
+  Free        : ${ramFree} GB
 
-DISCOS
+DISKS
 $($discos -join "`n")
 "@
-Write-Block "02-hardware.txt" "BLOCO 02 - HARDWARE" $content
+Write-Block "02-hardware.txt" "BLOCK 02 - HARDWARE" $content
 
 # ============================================================
-# BLOCO 03 - PROCESSOS
+# BLOCK 03 - PROCESSES
 # ============================================================
 $procs = Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 30 |
     ForEach-Object {
@@ -116,10 +116,10 @@ $procs = Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -Fir
     }
 
 $content = $procs -join "`n"
-Write-Block "03-processos.txt" "BLOCO 03 - PROCESSOS (Top 30 por RAM)" $content
+Write-Block "03-processos.txt" "BLOCK 03 - PROCESSES (Top 30 by RAM)" $content
 
 # ============================================================
-# BLOCO 04 - SERVICOS
+# BLOCK 04 - SERVICES
 # ============================================================
 $svcs = Get-Service | Where-Object { $_.Status -eq "Running" } | Sort-Object DisplayName |
     ForEach-Object {
@@ -127,10 +127,10 @@ $svcs = Get-Service | Where-Object { $_.Status -eq "Running" } | Sort-Object Dis
     }
 
 $content = $svcs -join "`n"
-Write-Block "04-servicos.txt" "BLOCO 04 - SERVICOS RODANDO" $content
+Write-Block "04-servicos.txt" "BLOCK 04 - RUNNING SERVICES" $content
 
 # ============================================================
-# BLOCO 05 - STARTUP
+# BLOCK 05 - STARTUP
 # ============================================================
 $startup = Get-CimInstance Win32_StartupCommand | Sort-Object Name |
     ForEach-Object {
@@ -138,12 +138,12 @@ $startup = Get-CimInstance Win32_StartupCommand | Sort-Object Name |
     }
 
 $content = $startup -join "`n"
-Write-Block "05-startup.txt" "BLOCO 05 - PROGRAMAS NA INICIALIZACAO" $content
+Write-Block "05-startup.txt" "BLOCK 05 - STARTUP PROGRAMS" $content
 
 # ============================================================
-# BLOCO 06 - REDE
+# BLOCK 06 - NETWORK
 # ============================================================
-# Puxa as conexoes uma vez e cacheia os processos por Id
+# Fetch connections once and cache processes by Id
 $tcp = Get-NetTCPConnection
 $procCache = @{}
 Get-Process | ForEach-Object { $procCache[$_.Id] = $_.Name }
@@ -165,16 +165,16 @@ $ports = $tcp | Where-Object { $_.State -eq "Listen" } |
     }
 
 $content = @"
-CONEXOES ESTABELECIDAS
+ESTABLISHED CONNECTIONS
 $($conns -join "`n")
 
-PORTAS ABERTAS (LISTEN)
+OPEN PORTS (LISTEN)
 $($ports -join "`n")
 "@
-Write-Block "06-rede.txt" "BLOCO 06 - REDE" $content
+Write-Block "06-rede.txt" "BLOCK 06 - NETWORK" $content
 
 # ============================================================
-# BLOCO 07 - TAREFAS AGENDADAS
+# BLOCK 07 - SCHEDULED TASKS
 # ============================================================
 $tasks = Get-ScheduledTask | Where-Object { $_.State -eq "Ready" -or $_.State -eq "Running" } |
     Sort-Object TaskName |
@@ -183,10 +183,10 @@ $tasks = Get-ScheduledTask | Where-Object { $_.State -eq "Ready" -or $_.State -e
     }
 
 $content = $tasks -join "`n"
-Write-Block "07-tarefas.txt" "BLOCO 07 - TAREFAS AGENDADAS (Ativas)" $content
+Write-Block "07-tarefas.txt" "BLOCK 07 - SCHEDULED TASKS (Active)" $content
 
 # ============================================================
-# BLOCO 08 - HYPER-V
+# BLOCK 08 - HYPER-V
 # ============================================================
 if (Get-Command Get-VM -ErrorAction SilentlyContinue) {
     try {
@@ -194,17 +194,17 @@ if (Get-Command Get-VM -ErrorAction SilentlyContinue) {
             $mem = [math]::Round($_.MemoryAssigned / 1MB, 0)
             "{0,-25} {1,-12} CPU: {2,5}%   RAM: {3} MB   Uptime: {4}" -f $_.Name, $_.State, $_.CPUUsage, $mem, $_.Uptime
         }
-        $content = if ($vms) { $vms -join "`n" } else { "Nenhuma VM encontrada." }
+        $content = if ($vms) { $vms -join "`n" } else { "No VMs found." }
     } catch {
-        $content = "Erro ao consultar VMs: $($_.Exception.Message)"
+        $content = "Error querying VMs: $($_.Exception.Message)"
     }
 } else {
-    $content = "Modulo Hyper-V nao disponivel nesta maquina."
+    $content = "Hyper-V module not available on this machine."
 }
-Write-Block "08-hyperv.txt" "BLOCO 08 - HYPER-V VMs" $content
+Write-Block "08-hyperv.txt" "BLOCK 08 - HYPER-V VMs" $content
 
 # ============================================================
-# FIM
+# END
 # ============================================================
 Write-Host ""
-Write-Host "Auditoria concluida: $logDir"
+Write-Host "Audit complete: $logDir"

@@ -78,9 +78,9 @@ winutil -Action audit
 ### Tweaks
 ```powershell
 winutil -Action tweaks -Preset standard         # telemetria, DVR, serviços
-winutil -Action tweaks -Preset standard -Undo  # reverte o preset
-winutil -Action tweaks -Preset minimal    # só o essencial
-winutil -Action tweaks -Preset advanced   # + OneDrive, widgets, Copilot
+winutil -Action tweaks -Preset standard -Undo   # reverte o preset
+winutil -Action tweaks -Preset minimal          # só o essencial
+winutil -Action tweaks -Preset advanced         # + OneDrive, widgets, Copilot
 ```
 
 ### Debloat
@@ -95,8 +95,8 @@ winutil -Action dns -Provider cloudflare
 winutil -Action dns -Provider google
 winutil -Action dns -Provider quad9
 winutil -Action dns -Provider adguard_ads_trackers
-winutil -Action dns -Provider dhcp                                          # volta ao padrão
-winutil -Action dns -Provider custom -PrimaryDNS 192.168.15.173 -SecondaryDNS 9.9.9.9
+winutil -Action dns -Provider dhcp                                                          # volta ao padrão
+winutil -Action dns -Provider custom -PrimaryDNS <IP_PRIMARIO> -SecondaryDNS <IP_SECUNDARIO>
 ```
 
 ### Performance
@@ -130,26 +130,26 @@ winutil -Action exporter -SubAction install    # instala + inicia + tarefa agend
 winutil -Action exporter -SubAction status     # processo + tarefa agendada
 winutil -Action exporter -SubAction start      # inicia o processo
 winutil -Action exporter -SubAction stop       # para o processo
-winutil -Action exporter -SubAction metrics    # verifica http://DESKTOP:9182/metrics
+winutil -Action exporter -SubAction metrics    # verifica http://<HOSTNAME>:9182/metrics
 winutil -Action exporter -SubAction firewall   # abre porta 9182
 ```
 
 ### Logs — leitura rápida
 ```powershell
 ls C:\log\                                    # sessões disponíveis
-cat C:\log\01.06.2026\01-sistema.txt          # bloco específico
-cat C:\log\01.06.2026\03-processos.txt        # top processos
-cat C:\log\01.06.2026\06-rede.txt             # conexões ativas
+cat C:\log\DD.MM.AAAA\01-sistema.txt          # bloco específico
+cat C:\log\DD.MM.AAAA\03-processos.txt        # top processos
+cat C:\log\DD.MM.AAAA\06-rede.txt             # conexões ativas
 
 # Ver todos os blocos de uma sessão
-Get-ChildItem C:\log\01.06.2026\ | ForEach-Object {
+Get-ChildItem C:\log\DD.MM.AAAA\ | ForEach-Object {
     Write-Host "=== $($_.Name) ===" -ForegroundColor Cyan
     Get-Content $_.FullName
     Write-Host
 }
 
 # Buscar processo nos logs
-Select-String -Path C:\log\01.06.2026\03-processos.txt -Pattern "docker"
+Select-String -Path C:\log\DD.MM.AAAA\03-processos.txt -Pattern "docker"
 ```
 
 ### Reverter / Limpar
@@ -182,6 +182,32 @@ winutil-cli
 
 ---
 
+## 🗂️ Estrutura do projeto
+
+```
+winutil-cli/
+├── winutil-cli.ps1          ← entry point: params, encoding, admin check, load, dispatch
+├── scripts/
+│   ├── Invoke-Audit.ps1
+│   ├── Invoke-Tweaks.ps1
+│   ├── Invoke-Debloat.ps1
+│   ├── Invoke-DNS.ps1
+│   ├── Invoke-Performance.ps1
+│   ├── Invoke-Install.ps1
+│   ├── Invoke-Memory.ps1
+│   ├── Invoke-Network.ps1
+│   └── Invoke-Exporter.ps1
+├── audit/
+├── config/
+├── functions/
+│   ├── private/
+│   └── public/
+├── pester/
+└── tools/
+```
+
+---
+
 ## 🗑️ O que foi removido
 
 - Interface gráfica WPF inteira (`xaml/`, funções `WPF*`)
@@ -199,6 +225,7 @@ winutil-cli
 ## ⚡ O que foi adicionado
 
 - `winutil-cli.ps1` — entry point com menu interativo e suporte a parâmetros CLI
+- `scripts/` — actions segmentadas em arquivos independentes (`Invoke-*.ps1`)
 - `audit/audit.ps1` — auditoria completa do sistema em 8 blocos
 - `tools/WinMemoryCleaner.exe` — baixado automaticamente na primeira execução
 - `pester/winutil-cli.Tests.ps1` — 14 testes Pester 5+ para o entry point
@@ -264,6 +291,7 @@ Invoke-Pester .\pester\winutil-cli.Tests.ps1
 - [x] Exporter — windows_exporter para Prometheus via Start-Process
 - [x] Testes automatizados no CI/CD (GitHub Actions)
 - [x] Suporte a `-Action tweaks -Undo` para reverter tweaks
+- [x] Segmentação do entry point em `scripts/Invoke-*.ps1`
 
 ---
 

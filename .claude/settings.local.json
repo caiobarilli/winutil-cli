@@ -8,7 +8,8 @@
       "PowerShell(Import-Module Pester -Force; Get-Module Pester | Select-Object Name, Version)",
       "PowerShell(Test-Path *)",
       "PowerShell(Get-ChildItem *)",
-      "PowerShell($env:PSModulePath -split ';')"
+      "PowerShell($env:PSModulePath -split ';')",
+      "PowerShell(Get-ChildItem 'C:\\\\winutil-cli\\\\scripts' | Select-Object Name, Length; Write-Host \"\"; \\(Get-Content 'C:\\\\winutil-cli\\\\winutil-cli.ps1'\\).Count; Write-Host \"linhas em winutil-cli.ps1\")"
     ]
   }
 }
