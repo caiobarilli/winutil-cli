@@ -191,13 +191,18 @@ Describe "Invoke-GPU - SubAction install" {
                 tag_name = 'v1.2.0'
                 assets   = @(
                     [PSCustomObject]@{
-                        name                 = 'nvidia_gpu_exporter_1.2.0_windows_amd64.exe'
-                        browser_download_url = 'http://example.com/nvidia_gpu_exporter.exe'
+                        name                 = 'nvidia_gpu_exporter_1.2.0_windows_x86_64.zip'
+                        browser_download_url = 'http://example.com/nvidia_gpu_exporter.zip'
                     }
                 )
             }
         }
         Mock Invoke-WebRequest  { }
+        Mock Expand-Archive     { }
+        Mock Get-ChildItem      {
+            [PSCustomObject]@{ FullName = 'C:\WinUtil\nvidia_gpu_exporter\nvidia_gpu_exporter.exe' }
+        } -ParameterFilter { $Filter -eq '*.exe' }
+        Mock Remove-Item        { }
         Mock Get-Process        { $null } -ParameterFilter { $Name -eq 'nvidia_gpu_exporter' }
         Mock Start-Process      { }
         Mock Register-ScheduledTask { }
@@ -233,8 +238,8 @@ Describe "Invoke-GPU - SubAction install" {
                 tag_name = 'v1.2.0'
                 assets   = @(
                     [PSCustomObject]@{
-                        name                 = 'nvidia_gpu_exporter_1.2.0_windows_amd64.exe'
-                        browser_download_url = 'http://example.com/nvidia_gpu_exporter.exe'
+                        name                 = 'nvidia_gpu_exporter_1.2.0_windows_x86_64.zip'
+                        browser_download_url = 'http://example.com/nvidia_gpu_exporter.zip'
                     }
                 )
             }

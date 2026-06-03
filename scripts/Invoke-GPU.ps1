@@ -80,15 +80,20 @@ function Invoke-GPU {
             $apiUrl  = 'https://api.github.com/repos/utkuozdemir/nvidia_gpu_exporter/releases/latest'
             $release = Invoke-RestMethod -Uri $apiUrl -UseBasicParsing
             $asset   = $release.assets |
-                       Where-Object { $_.name -match 'windows.*amd64.*\.exe$' -or $_.name -match 'amd64.*windows.*\.exe$' } |
+                       Where-Object { $_.name -match 'windows_x86_64\.zip$' } |
                        Select-Object -First 1
             if (-not $asset) {
-                Write-Status ERROR "Windows amd64 binary not found in the latest release."
+                Write-Status ERROR "Windows x86_64 zip not found in the latest release."
                 return
             }
             Write-Status INFO "Version: $($release.tag_name) / $($asset.name)"
-            Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $exePath -UseBasicParsing
-            Write-Status OK "Download complete: $exePath"
+            $zipPath = Join-Path $installDir 'nvidia_gpu_exporter.zip'
+            Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zipPath -UseBasicParsing
+            Expand-Archive -Path $zipPath -DestinationPath $installDir -Force
+            $exePath = Get-ChildItem -Path $installDir -Filter '*.exe' -Recurse |
+                       Select-Object -First 1 -ExpandProperty FullName
+            Remove-Item -Path $zipPath -Force
+            Write-Status OK "Extraction complete: $exePath"
         } catch {
             Write-Status ERROR "Download failed: $($_.Exception.Message)"
             return
