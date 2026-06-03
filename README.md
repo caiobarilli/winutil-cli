@@ -26,6 +26,56 @@ cd winutil-cli
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\winutil-cli.ps1
 ```
+## 🎮 Profiles — one command to optimize
+
+Pick the profile that matches your use case and run it. Use `-Undo` to fully restore.
+
+### 🖥️ Hyper-V (SSH-only)
+For machines running Hyper-V, Prometheus, AdGuard or similar services — no GUI needed.
+
+```powershell
+# After boot — no RDP session
+winutil -Action optimize -Preset ssh
+
+# After disconnecting RDP (run via SSH)
+winutil -Action optimize -Preset kill-rdp
+
+# Protect a specific user when logging off RDP sessions
+winutil -Action optimize -Preset kill-rdp -KeepUser "username"
+
+# Restore everything
+winutil -Action optimize -Undo
+```
+
+### 🎮 Gamer / Desktop
+For gaming PCs or workstations where you want to free RAM before a session.
+
+```powershell
+# Kill background clutter before launching a game
+winutil -Action optimize -Kill "SearchHost,StartMenuExperienceHost,msedgewebview2"
+
+# Clean RAM after closing apps
+winutil -Action memory
+```
+
+### 💼 Developer Workstation
+For devs who need RDP occasionally but want a clean environment most of the time.
+
+```powershell
+# Clean up after disconnecting RDP
+winutil -Action optimize -Preset kill-rdp
+
+# Kill specific background tools not in use
+winutil -Action optimize -Kill "cowork-svc,WslService"
+
+# Restore when you need everything back
+winutil -Action optimize -Undo
+```
+
+### ↩️ Restore everything (any profile)
+```powershell
+winutil -Action optimize -Undo
+```
 
 ## ⚙️ Adding to PATH
 
@@ -356,6 +406,7 @@ Invoke-Pester .\pester\ -Output Detailed
 | optimize kill-rdp -KeepUser | ✅ | Protects a specific user from logoff |
 | optimize -Undo | ✅ | Restores original StartupType and restarts services |
 | optimize -Kill | ✅ | Custom comma-separated process kill list |
+| optimize ssh — scheduled tasks | ✅ | Disables PACE/LDSvc tasks + restores on -Undo |
 
 ---
 
@@ -379,6 +430,7 @@ Invoke-Pester .\pester\ -Output Detailed
 - [x] Optimize — SSH preset with service disable + `-Undo` restore + custom `-Kill`
 - [x] Optimize — `kill-rdp` preset with automatic session logoff + `-KeepUser` flag
 - [x] Optimize — multi-language support for disconnected session detection (10 languages)
+- [x] Optimize — scheduled task disable support (LDSvc/PACE) with -Undo restore
 
 ---
 
