@@ -134,6 +134,12 @@ winutil -Action exporter -SubAction metrics    # check http://<HOSTNAME>:9182/me
 winutil -Action exporter -SubAction firewall   # open port 9182
 ```
 
+### Processes
+```powershell
+winutil -Action processes
+# Displays top 30 processes by RAM usage
+```
+
 ### Logs — quick read
 ```powershell
 ls C:\log\                                      # available sessions
@@ -177,6 +183,7 @@ winutil-cli
 [7] Memory      - Clean RAM
 [8] Network     - Packet capture with TShark
 [9] Exporter    - Install/manage windows_exporter (Prometheus)
+[10] Processes  - Show top 30 processes by RAM
 [0] Exit
 ```
 
@@ -196,7 +203,8 @@ winutil-cli/
 │   ├── Invoke-Install.ps1
 │   ├── Invoke-Memory.ps1
 │   ├── Invoke-Network.ps1
-│   └── Invoke-Exporter.ps1
+│   ├── Invoke-Exporter.ps1
+│   └── Invoke-Processes.ps1
 ├── audit/
 ├── config/
 ├── functions/
@@ -228,6 +236,7 @@ winutil-cli/
 - `scripts/` — actions split into independent modules (`Invoke-*.ps1`)
 - `audit/audit.ps1` — full system audit in 8 blocks
 - `tools/WinMemoryCleaner.exe` — downloaded automatically on first run
+- `scripts/Invoke-Processes.ps1` — lists top 30 processes by RAM usage directly in the terminal
 - `pester/winutil-cli.Tests.ps1` — 18 Pester 5+ tests for the entry point
 
 ---
@@ -272,6 +281,7 @@ Invoke-Pester .\pester\ -Output Detailed
 | network | ✅ | TShark + report in `C:\WinUtil\Reports\` |
 | exporter | ✅ | Start-Process + scheduled task at boot |
 | tweaks -Undo | ✅ | Reverts tweaks to original values |
+| processes | ✅ | Top 30 processes by RAM displayed in terminal |
 
 ---
 
@@ -291,6 +301,7 @@ Invoke-Pester .\pester\ -Output Detailed
 - [x] Automated tests in CI/CD (GitHub Actions)
 - [x] `-Action tweaks -Undo` support to revert tweaks
 - [x] Entry point segmented into `scripts/Invoke-*.ps1`
+- [x] Processes — top 30 processes by RAM displayed in terminal
 
 ---
 
