@@ -259,5 +259,31 @@ Describe "Execution with Mock" {
             $output = (Invoke-Optimize -Undo) 6>&1 | Out-String
             $output | Should -Match '\[ ERROR \]'
         }
+
+        It "-Preset kill-rdp calls Set-Service Disabled and Stop-Service for service-backed, Stop-Process for process-only" {
+            Mock Get-Process { [PSCustomObject]@{ Name = 'mock' } }
+            Mock Get-Service { [PSCustomObject]@{ Name = 'mock'; Status = 'Running'; StartType = 'Automatic' } }
+            Mock Set-Service { }
+            Mock Stop-Service { }
+            Mock Stop-Process { }
+            Mock Test-Path { $true }
+            Mock Set-Content { }
+            Invoke-Optimize -Preset 'kill-rdp'
+            # 2 service-backed: SearchHost (WSearch), TextInputHost (TextInputManagementService)
+            Should -Invoke -CommandName Set-Service  -Times 2
+            Should -Invoke -CommandName Stop-Service -Times 2
+            # 10 process-only: explorer, StartMenuExperienceHost, ShellExperienceHost, ShellHost,
+            #                   msedgewebview2, dwm, sihost, RuntimeBroker, backgroundTaskHost, CrossDeviceResume
+            Should -Invoke -CommandName Stop-Process -Times 10
+        }
+
+        It "-Preset kill-rdp does not throw" {
+            Mock Get-Process { $null }
+            Mock Get-Service { $null }
+            Mock Set-Service { }
+            Mock Stop-Process { }
+            Mock Stop-Service { }
+            { Invoke-Optimize -Preset 'kill-rdp' } | Should -Not -Throw
+        }
     }
 }

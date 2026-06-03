@@ -14,6 +14,13 @@ function Invoke-Optimize {
         'msedgewebview2', 'OfficeClickToRun'
     )
 
+    $killRdpProcesses = @(
+        'explorer', 'SearchHost', 'StartMenuExperienceHost',
+        'ShellExperienceHost', 'ShellHost', 'TextInputHost',
+        'msedgewebview2', 'dwm', 'sihost', 'RuntimeBroker',
+        'backgroundTaskHost', 'CrossDeviceResume'
+    )
+
     # Service-backed processes: disable before stopping to prevent SCM auto-restart.
     # Entries absent from this map fall back to Stop-Process.
     $serviceMap = @{
@@ -51,8 +58,12 @@ function Invoke-Optimize {
                 Write-Status INFO "Preset 'ssh': stopping headless-incompatible processes..."
                 foreach ($p in $sshProcesses) { $targets.Add($p) }
             }
+            'kill-rdp' {
+                Write-Status INFO "Preset 'kill-rdp': stopping RDP session remnants..."
+                foreach ($p in $killRdpProcesses) { $targets.Add($p) }
+            }
             default {
-                Write-Status ERROR "Unknown preset '$Preset'. Valid presets: ssh"
+                Write-Status ERROR "Unknown preset '$Preset'. Valid presets: ssh, kill-rdp"
                 return
             }
         }
@@ -67,7 +78,7 @@ function Invoke-Optimize {
     }
 
     if ($targets.Count -eq 0) {
-        Write-Status ERROR "No processes specified. Use -Preset ssh and/or -Kill 'proc1,proc2'."
+        Write-Status ERROR "No processes specified. Use -Preset <ssh|kill-rdp> and/or -Kill 'proc1,proc2'."
         return
     }
 
@@ -102,7 +113,19 @@ function Invoke-Optimize {
         if (-not (Test-Path $stateDir)) {
             New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
         }
-        $savedState | ConvertTo-Json | Set-Content -Path $stateFile -Encoding UTF8
+        $mergedState = @{}
+        if (Test-Path $stateFile) {
+            $existingRaw = Get-Content -Path $stateFile -Raw -ErrorAction SilentlyContinue
+            if ($existingRaw) {
+                try {
+                    ($existingRaw | ConvertFrom-Json).PSObject.Properties | ForEach-Object {
+                        $mergedState[$_.Name] = $_.Value
+                    }
+                } catch { }
+            }
+        }
+        foreach ($k in $savedState.Keys) { $mergedState[$k] = $savedState[$k] }
+        $mergedState | ConvertTo-Json | Set-Content -Path $stateFile -Encoding UTF8
     }
 
     Write-Status OK "Optimize complete."

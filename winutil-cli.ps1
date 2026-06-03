@@ -37,7 +37,7 @@ param(
     [ValidateSet('audit', 'tweaks', 'debloat', 'dns', 'performance', 'install', 'memory', 'network', 'exporter', 'processes', 'optimize')]
     [string]$Action,
 
-    [ValidateSet('standard', 'minimal', 'advanced', 'ssh')]
+    [ValidateSet('standard', 'minimal', 'advanced', 'ssh', 'kill-rdp')]
     [string]$Preset,
 
     [string]$Provider,
