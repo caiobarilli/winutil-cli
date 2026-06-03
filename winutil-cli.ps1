@@ -61,7 +61,10 @@ param(
     [switch]$Undo,
 
     # Optimize: comma-separated list of process names to stop
-    [string]$Kill
+    [string]$Kill,
+
+    # Optimize: skip disconnected RDP session belonging to this username
+    [string]$KeepUser
 )
 
 # ============================================================
@@ -259,7 +262,7 @@ if ($Action) {
         'network'     { Invoke-Network -Interface $Interface -Duration $Duration }
         'exporter'    { Invoke-Exporter -SubAction $SubAction }
         'processes'   { Invoke-Processes }
-        'optimize'    { Invoke-Optimize -Preset $Preset -Kill $Kill -Undo:$Undo }
+        'optimize'    { Invoke-Optimize -Preset $Preset -Kill $Kill -Undo:$Undo -KeepUser $KeepUser }
         default       { Write-Status ERROR "Unknown action: $Action" }
     }
 } else {

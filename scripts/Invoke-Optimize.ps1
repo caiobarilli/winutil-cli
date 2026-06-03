@@ -2,7 +2,8 @@ function Invoke-Optimize {
     param(
         [string]$Preset,
         [string]$Kill,
-        [switch]$Undo
+        [switch]$Undo,
+        [string]$KeepUser
     )
 
     $stateFile = 'C:\WinUtil\optimize-state.json'
@@ -59,6 +60,65 @@ function Invoke-Optimize {
                 foreach ($p in $sshProcesses) { $targets.Add($p) }
             }
             'kill-rdp' {
+                # ── SESSION LOGOFF ─────────────────────────────────────────────
+                $currentProc      = Get-Process -Id $PID -ErrorAction SilentlyContinue
+                $currentSessionId = if ($currentProc) { $currentProc.SessionId } else { -1 }
+
+                $rawSessions  = @(query session)
+                $discSessions = [System.Collections.Generic.List[object]]::new()
+
+                if ($rawSessions.Count -gt 1) {
+                    foreach ($line in $rawSessions | Select-Object -Skip 1) {
+                        $clean  = $line.TrimStart('>', ' ')
+                        $tokens = ($clean -split '\s{2,}') | Where-Object { $_ -ne '' }
+                        if ($tokens.Count -lt 2) { continue }
+
+                        $idIdx = -1
+                        for ($i = 0; $i -lt $tokens.Count; $i++) {
+                            if ($tokens[$i] -match '^\d+$') { $idIdx = $i; break }
+                        }
+                        if ($idIdx -lt 0 -or ($idIdx + 1) -ge $tokens.Count) { continue }
+
+                        $sid   = [int]$tokens[$idIdx]
+                        $state = $tokens[$idIdx + 1]
+                        $uname = if ($idIdx -ge 1) { $tokens[$idIdx - 1] } else { '' }
+
+                        if ($state -ne 'Disc')           { continue }
+                        if ($sid  -eq 0)                 { continue }
+                        if ($sid  -eq $currentSessionId) { continue }
+
+                        $discSessions.Add([PSCustomObject]@{ Id = $sid; Username = $uname })
+                    }
+                }
+
+                $logoffCount = 0
+                if ($discSessions.Count -eq 0) {
+                    Write-Status INFO "No disconnected RDP sessions found."
+                } else {
+                    Write-Status INFO "Found $($discSessions.Count) disconnected RDP session(s)..."
+                    foreach ($sess in $discSessions) {
+                        if ($KeepUser -and ($sess.Username -ieq $KeepUser)) {
+                            Write-Status WARNING "Skipped session $($sess.Id) ($($sess.Username)) - protected by -KeepUser"
+                            continue
+                        }
+                        logoff $sess.Id
+                        Write-Status OK "Logged off session $($sess.Id) ($($sess.Username))"
+                        $logoffCount++
+                    }
+
+                    if ($logoffCount -gt 0) {
+                        Write-Status INFO "Waiting for session processes to exit..."
+                        $deadline = (Get-Date).AddSeconds(10)
+                        while ((Get-Date) -lt $deadline) {
+                            $remaining = Get-Process -Name 'rdpclip', 'userinit' -ErrorAction SilentlyContinue
+                            if (-not $remaining) { break }
+                            Start-Sleep -Seconds 2
+                        }
+                        Write-Status OK "Session cleanup complete."
+                    }
+                }
+
+                # ── PROCESS CLEANUP ────────────────────────────────────────────
                 Write-Status INFO "Preset 'kill-rdp': stopping RDP session remnants..."
                 foreach ($p in $killRdpProcesses) { $targets.Add($p) }
             }
