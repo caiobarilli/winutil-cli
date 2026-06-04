@@ -137,11 +137,15 @@ function Invoke-GPU {
     }
 
     function Show-GPUMetrics {
+        param([switch]$Filter)
         $url = "http://localhost:$port/metrics"
         Write-Status INFO "Metrics URL: $url"
         try {
-            $resp = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
-            $lines = ($resp.Content -split "`n") | Select-Object -First 20
+            $resp  = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+            $lines = ($resp.Content -split "`n") | Select-Object -First 100
+            if ($Filter) {
+                $lines = $lines | Where-Object { $_ -match 'nvidia_smi|nvidia_gpu_exporter_build' }
+            }
             Write-Host ($lines -join "`n")
         } catch {
             Write-Status WARNING "Port $port did not respond: $($_.Exception.Message)"
@@ -190,15 +194,16 @@ function Invoke-GPU {
 
     if ($SubAction) {
         switch ($SubAction.ToLower()) {
-            'install'   { Install-GPUExporter }
-            'status'    { Show-GPUExporterStatus }
-            'start'     { Start-GPUExporterProcess }
-            'stop'      { Stop-GPUExporterProcess }
-            'metrics'   { Show-GPUMetrics }
-            'uninstall' { Uninstall-GPUExporter }
+            'install'     { Install-GPUExporter }
+            'status'      { Show-GPUExporterStatus }
+            'start'       { Start-GPUExporterProcess }
+            'stop'        { Stop-GPUExporterProcess }
+            'metrics'     { Show-GPUMetrics }
+            'metrics-gpu' { Show-GPUMetrics -Filter }
+            'uninstall'   { Uninstall-GPUExporter }
             default {
                 Write-Status ERROR "Unknown subaction: '$SubAction'."
-                Write-Status INFO "Options: install, status, start, stop, metrics, uninstall"
+                Write-Status INFO "Options: install, status, start, stop, metrics, metrics-gpu, uninstall"
             }
         }
         return
@@ -211,7 +216,7 @@ function Invoke-GPU {
         Write-Host "  [2] View process status"
         Write-Host "  [3] Start process"
         Write-Host "  [4] Stop process"
-        Write-Host "  [5] View metrics (first 20 lines)"
+        Write-Host "  [5] View metrics (first 100 lines)"
         Write-Host "  [6] Uninstall"
         Write-Host "  [0] Back"
         Write-Host ""

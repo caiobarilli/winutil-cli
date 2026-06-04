@@ -171,9 +171,56 @@ Describe "Invoke-GPU - SubAction metrics" {
         $output | Should -Match '9835'
     }
 
+    It "shows at most 100 lines (not 20) from the response" {
+        # 110 numbered lines; only first 100 should appear
+        $allLines = (1..110 | ForEach-Object { "line_$_" }) -join "`n"
+        Mock Invoke-WebRequest { [PSCustomObject]@{ Content = $allLines } }
+        $output = (Invoke-GPU -SubAction 'metrics') 6>&1 | Out-String
+        $output | Should -Match 'line_100'
+        $output | Should -Not -Match 'line_101'
+    }
+
     It "emits [ WARNING ] when port is not reachable" {
         Mock Invoke-WebRequest { throw "Connection refused" }
         $output = (Invoke-GPU -SubAction 'metrics') 6>&1 | Out-String
+        $output | Should -Match '\[ WARNING \]'
+    }
+}
+
+# ==============================================================
+# SUBACTION — metrics-gpu
+# ==============================================================
+Describe "Invoke-GPU - SubAction metrics-gpu" {
+
+    It "emits [ INFO ] with the metrics URL" {
+        Mock Invoke-WebRequest {
+            [PSCustomObject]@{ Content = ("nvidia_smi_power_watts 42`n" * 5) }
+        }
+        $output = (Invoke-GPU -SubAction 'metrics-gpu') 6>&1 | Out-String
+        $output | Should -Match '\[ INFO \]'
+        $output | Should -Match '9835'
+    }
+
+    It "filters out non-nvidia_smi and non-build lines" {
+        $content = @(
+            'go_gc_duration_seconds 0.001'
+            'nvidia_smi_power_watts 42'
+            'process_cpu_seconds 1.5'
+            'nvidia_gpu_exporter_build_info{version="1.0"} 1'
+            'promhttp_metric_handler_requests_total 10'
+        ) -join "`n"
+        Mock Invoke-WebRequest { [PSCustomObject]@{ Content = $content } }
+        $output = (Invoke-GPU -SubAction 'metrics-gpu') 6>&1 | Out-String
+        $output | Should -Match 'nvidia_smi_power_watts'
+        $output | Should -Match 'nvidia_gpu_exporter_build'
+        $output | Should -Not -Match 'go_gc_duration_seconds'
+        $output | Should -Not -Match 'process_cpu_seconds'
+        $output | Should -Not -Match 'promhttp_metric_handler'
+    }
+
+    It "emits [ WARNING ] when port is not reachable" {
+        Mock Invoke-WebRequest { throw "Connection refused" }
+        $output = (Invoke-GPU -SubAction 'metrics-gpu') 6>&1 | Out-String
         $output | Should -Match '\[ WARNING \]'
     }
 }
